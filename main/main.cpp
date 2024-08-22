@@ -1,13 +1,24 @@
 #include <stdio.h>
 #include "SevenSegment.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
-SevenSegment s1(0) ;
-SevenSegment s2(4) ;
+SevenSegment s1(0);
+SevenSegment s2(4);
 
-extern "C" void app_main(void)
+// create counter as global variable
+uint8_t counter = 0;
+
+
+// create task handle for LED display task
+TaskHandle_t xSevenSegmentHandle = NULL;
+
+// create task handle for counter task
+TaskHandle_t xCounterHandle = NULL;
+
+void vTaskScanSevenSegment(void *Parameters)
 {
-    uint8_t counter = 0;
-    while(1)
+    while (1)
     {
         s1.DisplayNumber(counter / 10);
         s1.DisplayOn();
@@ -18,97 +29,26 @@ extern "C" void app_main(void)
         s2.DisplayOn();
         vTaskDelay(10 / portTICK_PERIOD_MS);
         s2.DisplayOff();
-        counter++;
-        if (counter > 99)
+    }
+}
+
+// add counter task, increment every 1000ms (1 second)
+void vTaskCounter(void *Parameters)
+{
+    while (1)
+    {
+        if(counter++ > 99)
             counter = 0;
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+}
 
-        // s1.DisplayNum0();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s1.DisplayNum1();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s1.DisplayNum2();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s1.DisplayNum3();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s1.DisplayNum4();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s1.DisplayNum5();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s1.DisplayNum6();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s1.DisplayNum7();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s1.DisplayNum8();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s1.DisplayNum9();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s1.DisplayBlank();
+extern "C" void app_main(void)
+{
+    xTaskCreate(vTaskScanSevenSegment, "Seven Seg", 
+        1024, NULL, 10, &xSevenSegmentHandle);
 
-        // s2.DisplayNum0();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s2.DisplayNum1();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s2.DisplayNum2();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s2.DisplayNum3();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s2.DisplayNum4();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s2.DisplayNum5();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s2.DisplayNum6();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s2.DisplayNum7();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s2.DisplayNum8();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s2.DisplayNum9();
-        // vTaskDelay(500/portTICK_PERIOD_MS);
-        // s2.DisplayBlank();
-// =======
-//         s1.DisplayNum0();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s1.DisplayNum1();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s1.DisplayNum2();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s1.DisplayNum3();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s1.DisplayNum4();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s1.DisplayNum5();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s1.DisplayNum6();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s1.DisplayNum7();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s1.DisplayNum8();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s1.DisplayNum9();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s1.DisplayBlank();
-
-//         s2.DisplayNum0();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s2.DisplayNum1();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s2.DisplayNum2();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s2.DisplayNum3();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s2.DisplayNum4();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s2.DisplayNum5();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s2.DisplayNum6();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s2.DisplayNum7();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s2.DisplayNum8();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s2.DisplayNum9();
-//         vTaskDelay(500/portTICK_PERIOD_MS);
-//         s2.DisplayBlank();
-// >>>>>>> 46b053ab320d8246db097455107eb23b48b86989
-    } 
+    // create counter task with priority 5 (Lower than scan display task)   
+    xTaskCreate(vTaskCounter, "Counter", 
+        1024, NULL, 5, &xCounterHandle);
 }
